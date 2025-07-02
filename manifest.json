@@ -3,6 +3,8 @@
   "name": "เครื่องคำนวณสุขภาพครบวงจร",
   "short_name": "สุขภาพดี",
   "description": "คำนวณ BMR, TDEE, แคลอรี่, Macros และวางแผนโภชนาการ",
+  "dir": "auto",
+  "iarc_rating_id": "e5b6c8a9-011f-4314-9a37-15a6b571c2b5",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait-primary",
