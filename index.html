@@ -469,6 +469,14 @@
                 });
             });
         }
+
+        // --- Listener for messages from Service Worker (for Background Sync) ---
+        navigator.serviceWorker.addEventListener('message', event => {
+            if (event.data && event.data.type === 'SYNC_SUCCESS') {
+                // You can show a more subtle notification instead of an alert
+                alert(event.data.message || 'ข้อมูลถูกซิงค์เรียบร้อยแล้ว');
+            }
+        });
     </script>
 </body>
 </html>
