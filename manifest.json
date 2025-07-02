@@ -18,6 +18,7 @@
     "food & drink"
   ],
   "dir": "auto",
+  "lang": "th-TH",
   "iarc_rating_id": "e5b6c8a9-011f-4314-9a37-15a6b571c2b5",
   "start_url": "./index.html",
   "display": "standalone",
