@@ -1,0 +1,23 @@
+{
+  "name": "เครื่องคำนวณสุขภาพครบวงจร",
+  "short_name": "สุขภาพดี",
+  "description": "คำนวณ BMR, TDEE, แคลอรี่, Macros และวางแผนโภชนาการ",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f1f5f9",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "https://placehold.co/192x192/4f46e5/ffffff?text=❤️",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "https://placehold.co/512x512/4f46e5/ffffff?text=❤️",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
