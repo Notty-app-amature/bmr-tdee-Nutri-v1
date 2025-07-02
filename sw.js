@@ -2,7 +2,7 @@
 const CACHE_NAME = 'bmr-calculator-v3'; // Updated version for new features
 const urlsToCache = [
   './index.html',
-  './manifest.json',
+  './manifest.json', // Add manifest to the cache
   'https://cdn.tailwindcss.com',
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap'
@@ -65,8 +65,6 @@ self.addEventListener('activate', event => {
 self.addEventListener('push', event => {
   console.log('Service Worker: Push Received.');
   
-  // ดึงข้อมูลที่ส่งมาในรูปแบบ JSON
-  // เราสามารถส่ง title, body, icon, etc. มาจากเซิร์ฟเวอร์ได้
   const data = event.data ? event.data.json() : {
     title: 'สวัสดีจากแอปสุขภาพดี!',
     body: 'มีการแจ้งเตือนใหม่',
@@ -76,10 +74,10 @@ self.addEventListener('push', event => {
   const options = {
     body: data.body,
     icon: data.icon,
-    badge: 'https://placehold.co/96x96/4f46e5/ffffff?text=★', // ไอคอนเล็กๆ สำหรับแถบสถานะ
-    vibrate: [200, 100, 200], // รูปแบบการสั่น
+    badge: 'https://placehold.co/96x96/4f46e5/ffffff?text=★',
+    vibrate: [200, 100, 200],
     data: {
-        url: self.registration.scope // URL ที่จะเปิดเมื่อคลิก
+        url: self.registration.scope
     }
   };
 
@@ -91,12 +89,56 @@ self.addEventListener('push', event => {
 // Event: 'notificationclick' - เกิดขึ้นเมื่อผู้ใช้คลิกที่การแจ้งเตือน
 self.addEventListener('notificationclick', event => {
   console.log('Service Worker: Notification click Received.');
-
-  // ปิดการแจ้งเตือนนั้น
   event.notification.close();
-
-  // เปิดหน้าต่างแอปพลิเคชันขึ้นมา
   event.waitUntil(
     clients.openWindow(event.notification.data.url)
   );
 });
+
+// ==================================================================
+// 5. ส่วนสำหรับ BACKGROUND SYNC
+// ==================================================================
+
+// Event: 'sync' - เกิดขึ้นเมื่อมีการเชื่อมต่ออินเทอร์เน็ตกลับมา
+self.addEventListener('sync', event => {
+  if (event.tag === 'sync-save-results') {
+    console.log('Service Worker: กำลังเริ่มการ sync สำหรับ "sync-save-results"');
+    event.waitUntil(syncSaveResults());
+  }
+});
+
+// ฟังก์ชันสมมติสำหรับจัดการการส่งข้อมูลที่ค้างอยู่
+function syncSaveResults() {
+  console.log('Service Worker: กำลังพยายามส่งข้อมูลที่บันทึกไว้...');
+  
+  // ในการใช้งานจริง: ดึงข้อมูลจาก IndexedDB แล้วส่งไปยังเซิร์ฟเวอร์
+  return fetch('https://jsonplaceholder.typicode.com/posts', {
+    method: 'POST',
+    body: JSON.stringify({
+      title: 'Sync Test',
+      body: 'Background sync successful!',
+      userId: 1,
+    }),
+    headers: {
+      'Content-type': 'application/json; charset=UTF-8',
+    },
+  })
+  .then(response => {
+      if (!response.ok) {
+          throw new Error('Network response was not ok.');
+      }
+      return response.json();
+  })
+  .then(json => {
+      console.log('Service Worker: Sync สำเร็จ!', json);
+      self.clients.matchAll().then(clients => {
+          clients.forEach(client => {
+              client.postMessage({ type: 'SYNC_SUCCESS', message: 'ผลลัพธ์ของคุณถูกบันทึกเรียบร้อยแล้ว' });
+          });
+      });
+  })
+  .catch(err => {
+      console.error('Service Worker: Sync ล้มเหลว:', err);
+      return Promise.reject(err);
+  });
+}
