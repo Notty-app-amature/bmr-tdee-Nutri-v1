@@ -25,6 +25,7 @@
   "orientation": "portrait-primary",
   "background_color": "#f1f5f9",
   "theme_color": "#4f46e5",
+  "prefer_related_applications": false,
   "launch_handler": {
     "client_mode": "navigate-existing"
   },
