@@ -5,6 +5,7 @@
   "description": "คำนวณ BMR, TDEE, แคลอรี่, Macros และวางแผนโภชนาการ",
   "start_url": "./index.html",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#f1f5f9",
   "theme_color": "#4f46e5",
   "launch_handler": {
