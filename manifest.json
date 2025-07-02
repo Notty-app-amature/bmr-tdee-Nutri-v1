@@ -3,6 +3,7 @@
   "name": "เครื่องคำนวณสุขภาพครบวงจร",
   "short_name": "สุขภาพดี",
   "description": "คำนวณ BMR, TDEE, แคลอรี่, Macros และวางแผนโภชนาการ",
+  "scope": "/health-calculator-app/",
   "categories": [
     "health",
     "fitness",
