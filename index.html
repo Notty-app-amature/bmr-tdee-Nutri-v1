@@ -139,6 +139,12 @@
                         ล้างข้อมูล
                     </button>
                 </div>
+                 <!-- NEW: Periodic Sync Button -->
+                <div class="md:col-span-2">
+                    <button type="button" id="daily-tip-button" class="w-full py-3 px-4 rounded-lg shadow-sm text-base font-medium text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-transform transform hover:scale-105 mt-4">
+                        เปิดรับเคล็ดลับสุขภาพรายวัน
+                    </button>
+                </div>
             </div>
         </form>
 
@@ -221,6 +227,7 @@
         const bmrForm = document.getElementById('bmrForm');
         const resultsDiv = document.getElementById('results');
         const resetBtn = document.getElementById('resetBtn');
+        const dailyTipButton = document.getElementById('daily-tip-button');
 
         // --- Body Fat Modal Elements ---
         const bfModal = document.getElementById('bfModal');
@@ -232,6 +239,7 @@
         // --- Event Listeners ---
         bmrForm.addEventListener('submit', handleMainCalculate);
         resetBtn.addEventListener('click', handleReset);
+        dailyTipButton.addEventListener('click', registerPeriodicSync);
         openBfModalBtn.addEventListener('click', openBfModal);
         closeBfModalBtn.addEventListener('click', closeBfModal);
         calculateBfBtn.addEventListener('click', handleBfCalculate);
@@ -420,7 +428,6 @@
                 const selector = document.getElementById(`${macroType}-selector`);
                 if(selector) {
                     selector.addEventListener('change', () => calculateAndUpdate(macroType));
-                    // Initial calculation
                     calculateAndUpdate(macroType);
                 }
             });
@@ -470,13 +477,40 @@
             });
         }
 
-        // --- Listener for messages from Service Worker (for Background Sync) ---
+        // --- Listener for messages from Service Worker ---
         navigator.serviceWorker.addEventListener('message', event => {
             if (event.data && event.data.type === 'SYNC_SUCCESS') {
-                // You can show a more subtle notification instead of an alert
                 alert(event.data.message || 'ข้อมูลถูกซิงค์เรียบร้อยแล้ว');
             }
         });
+
+        // --- Periodic Sync Registration ---
+        async function registerPeriodicSync() {
+            if (!('serviceWorker' in navigator) || !('PeriodicSyncManager' in window)) {
+                console.log('Periodic Background Sync is not supported.');
+                alert('เบราว์เซอร์ของคุณไม่รองรับฟีเจอร์นี้');
+                return;
+            }
+
+            const swRegistration = await navigator.serviceWorker.ready;
+            const status = await navigator.permissions.query({ name: 'periodic-background-sync' });
+
+            if (status.state === 'granted') {
+                try {
+                    await swRegistration.periodicSync.register('get-daily-tip', {
+                        minInterval: 12 * 60 * 60 * 1000, 
+                    });
+                    console.log('Periodic Sync registered successfully!');
+                    alert('เราจะส่งเคล็ดลับสุขภาพดีๆ ให้คุณเป็นระยะๆ นะครับ');
+                } catch (error) {
+                    console.error('Periodic Sync registration failed:', error);
+                }
+            } else {
+                console.log('Periodic Sync permission was not granted.');
+                alert('หากต้องการรับเคล็ดลับสุขภาพดีๆ กรุณาอนุญาตให้แอปทำงานเบื้องหลังได้ในตั้งค่า');
+            }
+        }
+
     </script>
 </body>
 </html>
