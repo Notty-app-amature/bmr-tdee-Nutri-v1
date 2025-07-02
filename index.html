@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- PWA Manifest and Theme Color -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#4f46e5">
+
+    <!-- PWA Meta Tags for iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="สุขภาพดี">
+    <link rel="apple-touch-icon" href="https://placehold.co/192x192/4f46e5/ffffff?text=❤️">
+
+    <title>เครื่องคำนวณ BMR, TDEE และ Macros</title>
+    
+    <!-- Tailwind CSS for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Chart.js for visualization -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Google Fonts: Inter & Sarabun -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Sarabun', 'Inter', sans-serif;
+        }
+        .form-input:focus, .food-selector:focus {
+            --tw-ring-color: #4f46e5;
+            box-shadow: var(--tw-ring-inset) 0 0 0 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color);
+            border-color: #4f46e5;
+        }
+        .result-card {
+            transition: all 0.3s ease-in-out;
+        }
+        .modal-open {
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="bg-slate-100 dark:bg-gray-900 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-2xl bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-6 md:p-10 transition-all">
+        
+        <h1 class="text-3xl md:text-4xl font-bold text-center text-gray-800 dark:text-white mb-2">
+            เครื่องคำนวณสุขภาพครบวงจร
+        </h1>
+        <p class="text-center text-gray-500 dark:text-gray-400 mb-8">
+            คำนวณ BMR, TDEE, แคลอรี่ตามเป้าหมาย และ Macros
+        </p>
+
+        <!-- Input Form -->
+        <form id="bmrForm">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                
+                <!-- Gender -->
+                <div class="md:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">เพศ</label>
+                    <div class="flex items-center space-x-4 p-2 bg-slate-100 dark:bg-gray-700 rounded-lg">
+                        <label class="flex-1 text-center cursor-pointer">
+                            <input type="radio" name="gender" value="male" class="sr-only peer" checked>
+                            <div class="w-full p-2 rounded-md text-gray-600 dark:text-gray-300 peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:font-bold transition-all">ชาย</div>
+                        </label>
+                        <label class="flex-1 text-center cursor-pointer">
+                            <input type="radio" name="gender" value="female" class="sr-only peer">
+                            <div class="w-full p-2 rounded-md text-gray-600 dark:text-gray-300 peer-checked:bg-pink-500 peer-checked:text-white peer-checked:font-bold transition-all">หญิง</div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Age, Weight, Height -->
+                <div>
+                    <label for="age" class="block text-sm font-medium text-gray-700 dark:text-gray-300">อายุ (ปี)</label>
+                    <input type="number" id="age" required class="form-input mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                </div>
+                <div>
+                    <label for="weight" class="block text-sm font-medium text-gray-700 dark:text-gray-300">น้ำหนัก (กก.)</label>
+                    <input type="number" id="weight" step="any" required class="form-input mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                </div>
+                <div>
+                    <label for="height" class="block text-sm font-medium text-gray-700 dark:text-gray-300">ส่วนสูง (ซม.)</label>
+                    <input type="number" id="height" step="any" required class="form-input mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                </div>
+                
+                <!-- Body Fat Percentage -->
+                <div>
+                    <label for="bodyfat" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                        % ไขมันในร่างกาย 
+                    </label>
+                    <div class="flex items-center gap-2 mt-1">
+                        <input type="number" id="bodyfat" step="any" placeholder="กรอก หรือ คำนวณ" class="form-input block w-full rounded-md border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <button type="button" id="openBfModalBtn" class="px-3 py-2 bg-indigo-100 text-indigo-700 dark:bg-indigo-900 dark:text-indigo-200 text-sm font-medium rounded-md hover:bg-indigo-200 dark:hover:bg-indigo-800">คำนวณ</button>
+                    </div>
+                </div>
+
+                <!-- Activity Level -->
+                <div class="md:col-span-2">
+                    <label for="activity" class="block text-sm font-medium text-gray-700 dark:text-gray-300">ระดับกิจกรรม</label>
+                    <select id="activity" required class="form-input mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option value="1.2">ไม่ออกกำลังกายเลย</option>
+                        <option value="1.375">ออกกำลังกายเบาๆ (1-3 วัน/สัปดาห์)</option>
+                        <option value="1.55">ออกกำลังกายปานกลาง (3-5 วัน/สัปดาห์)</option>
+                        <option value="1.725">ออกกำลังกายหนัก (6-7 วัน/สัปดาห์)</option>
+                        <option value="1.9">ออกกำลังกายหนักมาก (ทุกวัน)</option>
+                    </select>
+                </div>
+
+                <!-- Goal & Macro Ratio Selection -->
+                <div>
+                    <label for="goal" class="block text-sm font-medium text-gray-700 dark:text-gray-300">เป้าหมายของคุณ</label>
+                    <select id="goal" required class="form-input mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option value="lose">ลดน้ำหนัก (-500 Cal)</option>
+                        <option value="maintain" selected>รักษาน้ำหนัก</option>
+                        <option value="gain">เพิ่มน้ำหนัก (+500 Cal)</option>
+                    </select>
+                </div>
+                
+                <div>
+                    <label for="macroRatio" class="block text-sm font-medium text-gray-700 dark:text-gray-300">แผนสารอาหาร (Macros)</label>
+                    <select id="macroRatio" required class="form-input mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        <option value="balanced" selected>สมดุล (C:40 P:30 F:30)</option>
+                        <option value="highprotein">โปรตีนสูง (C:30 P:40 F:30)</option>
+                        <option value="lowcarb">คาร์โบไฮเดรตต่ำ (C:20 P:45 F:35)</option>
+                    </select>
+                </div>
+
+                <!-- Buttons -->
+                <div class="md:col-span-2 flex flex-col sm:flex-row gap-4">
+                    <button type="submit" class="w-full py-3 px-4 rounded-lg shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-transform transform hover:scale-105">
+                        คำนวณ
+                    </button>
+                    <button type="button" id="resetBtn" class="w-full py-3 px-4 rounded-lg shadow-sm text-base font-medium text-gray-700 bg-slate-200 hover:bg-slate-300 dark:bg-gray-600 dark:text-gray-200 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-500 transition-transform transform hover:scale-105">
+                        ล้างข้อมูล
+                    </button>
+                </div>
+            </div>
+        </form>
+
+        <!-- Results Display -->
+        <div id="results" class="mt-8 pt-6 border-t border-gray-200 dark:border-gray-700" style="display: none;">
+            <!-- Result content is generated by JS -->
+        </div>
+    </div>
+
+    <!-- Body Fat Calculator Modal -->
+    <div id="bfModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white dark:bg-gray-800 rounded-lg shadow-xl p-6 w-full max-w-md">
+            <h2 class="text-xl font-bold text-gray-800 dark:text-white mb-4">คำนวณ % ไขมันในร่างกาย</h2>
+            <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">กรอกข้อมูลการวัด (หน่วย ซม.) เพื่อคำนวณ % ไขมันตามสูตร U.S. Navy</p>
+            <div class="space-y-4">
+                <div>
+                    <label for="neck" class="block text-sm font-medium text-gray-700 dark:text-gray-300">รอบคอ (ซม.)</label>
+                    <input type="number" id="neck" step="any" class="form-input mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                </div>
+                <div>
+                    <label for="waist" class="block text-sm font-medium text-gray-700 dark:text-gray-300">รอบเอว (ซม.)</label>
+                    <input type="number" id="waist" step="any" class="form-input mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                </div>
+                <div id="hip-container">
+                    <label for="hip" class="block text-sm font-medium text-gray-700 dark:text-gray-300">รอบสะโพก (ซม.)</label>
+                    <input type="number" id="hip" step="any" class="form-input mt-1 block w-full rounded-md border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                </div>
+            </div>
+            <div class="mt-6 flex justify-end gap-4">
+                <button type="button" id="closeBfModalBtn" class="px-4 py-2 bg-slate-200 text-gray-700 rounded-md hover:bg-slate-300">ปิด</button>
+                <button type="button" id="calculateBfBtn" class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700">คำนวณและกรอกค่า</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- Global Chart Variable ---
+        let myMacroChart = null;
+
+        // --- Expanded Food Database ---
+        const foodDatabase = {
+            protein: [
+                { name: 'อกไก่ (ดิบ)', value: 25, unit: 'กรัม' },
+                { name: 'เนื้อวัวไม่ติดมัน (ดิบ)', value: 22, unit: 'กรัม' },
+                { name: 'เนื้อหมูสันใน (ดิบ)', value: 21, unit: 'กรัม' },
+                { name: 'ปลาแซลมอน (ดิบ)', value: 20, unit: 'กรัม' },
+                { name: 'ปลาทูน่าในน้ำแร่', value: 23, unit: 'กรัม' },
+                { name: 'ไข่ไก่ (ฟองใหญ่)', value: 6, unit: 'ฟอง' },
+                { name: 'เต้าหู้ขาว', value: 8, unit: 'กรัม' },
+                { name: 'เวย์โปรตีน', value: 80, unit: 'กรัม' },
+                { name: 'กุ้ง (ดิบ)', value: 24, unit: 'กรัม' },
+                { name: 'โยเกิร์ตกรีก', value: 10, unit: 'กรัม' }
+            ],
+            carbs: [
+                { name: 'ข้าวสวย', value: 28, unit: 'กรัม' },
+                { name: 'ข้าวกล้อง (สุก)', value: 23, unit: 'กรัม' },
+                { name: 'ข้าวไรซ์เบอร์รี่ (สุก)', value: 24, unit: 'กรัม' },
+                { name: 'มันเทศ (สุก)', value: 20, unit: 'กรัม' },
+                { name: 'กล้วยหอม', value: 23, unit: 'กรัม' },
+                { name: 'ข้าวโอ๊ต (แห้ง)', value: 66, unit: 'กรัม' },
+                { name: 'ขนมปังโฮลวีท', value: 49, unit: 'กรัม' },
+                { name: 'พาสต้า (สุก)', value: 25, unit: 'กรัม' },
+                { name: 'มันฝรั่ง (สุก)', value: 17, unit: 'กรัม' },
+                { name: 'ฟักทอง (สุก)', value: 7, unit: 'กรัม' }
+            ],
+            fats: [
+                { name: 'น้ำมันมะกอก', value: 100, unit: 'กรัม' },
+                { name: 'อโวคาโด', value: 15, unit: 'กรัม' },
+                { name: 'อัลมอนด์', value: 50, unit: 'กรัม' },
+                { name: 'วอลนัท', value: 65, unit: 'กรัม' },
+                { name: 'เนยถั่ว', value: 50, unit: 'กรัม' },
+                { name: 'เมล็ดเจีย', value: 31, unit: 'กรัม' },
+                { name: 'น้ำมันมะพร้าว', value: 100, unit: 'กรัม' },
+                { name: 'ดาร์กช็อกโกแลต (>70%)', value: 43, unit: 'กรัม' },
+                { name: 'เมล็ดทานตะวัน', value: 51, unit: 'กรัม' }
+            ]
+        };
+
+        // --- Main Form Elements ---
+        const bmrForm = document.getElementById('bmrForm');
+        const resultsDiv = document.getElementById('results');
+        const resetBtn = document.getElementById('resetBtn');
+
+        // --- Body Fat Modal Elements ---
+        const bfModal = document.getElementById('bfModal');
+        const openBfModalBtn = document.getElementById('openBfModalBtn');
+        const closeBfModalBtn = document.getElementById('closeBfModalBtn');
+        const calculateBfBtn = document.getElementById('calculateBfBtn');
+        const hipContainer = document.getElementById('hip-container');
+
+        // --- Event Listeners ---
+        bmrForm.addEventListener('submit', handleMainCalculate);
+        resetBtn.addEventListener('click', handleReset);
+        openBfModalBtn.addEventListener('click', openBfModal);
+        closeBfModalBtn.addEventListener('click', closeBfModal);
+        calculateBfBtn.addEventListener('click', handleBfCalculate);
+        
+        document.querySelectorAll('input[name="gender"]').forEach(radio => {
+            radio.addEventListener('change', updateHipVisibility);
+        });
+
+        // --- Modal Functions ---
+        function openBfModal() {
+            updateHipVisibility();
+            bfModal.classList.remove('hidden');
+            document.body.classList.add('modal-open');
+        }
+
+        function closeBfModal() {
+            bfModal.classList.add('hidden');
+            document.body.classList.remove('modal-open');
+        }
+        
+        function updateHipVisibility() {
+            const gender = document.querySelector('input[name="gender"]:checked').value;
+            hipContainer.style.display = gender === 'female' ? 'block' : 'none';
+        }
+
+        // --- Calculation Functions ---
+        function handleBfCalculate() {
+            const gender = document.querySelector('input[name="gender"]:checked').value;
+            const height = parseFloat(document.getElementById('height').value);
+            const neck = parseFloat(document.getElementById('neck').value);
+            const waist = parseFloat(document.getElementById('waist').value);
+            
+            if (isNaN(height) || isNaN(neck) || isNaN(waist) || height <= 0 || neck <= 0 || waist <= 0) {
+                alert('กรุณากรอกส่วนสูง, รอบคอ, และรอบเอวในฟอร์มหลักและในนี้ให้ถูกต้อง');
+                return;
+            }
+
+            let bodyFatPercentage = 0;
+
+            if (gender === 'male') {
+                bodyFatPercentage = 495 / (1.0324 - 0.19077 * Math.log10(waist - neck) + 0.15456 * Math.log10(height)) - 450;
+            } else {
+                const hip = parseFloat(document.getElementById('hip').value);
+                if (isNaN(hip) || hip <= 0) {
+                    alert('สำหรับเพศหญิง, กรุณากรอกรอบสะโพก');
+                    return;
+                }
+                bodyFatPercentage = 495 / (1.29579 - 0.35004 * Math.log10(waist + hip - neck) + 0.22100 * Math.log10(height)) - 450;
+            }
+
+            if (bodyFatPercentage > 0 && bodyFatPercentage < 100) {
+                document.getElementById('bodyfat').value = bodyFatPercentage.toFixed(1);
+                closeBfModal();
+            } else {
+                alert('ไม่สามารถคำนวณได้, กรุณาตรวจสอบค่าที่กรอกอีกครั้ง');
+            }
+        }
+
+        function handleMainCalculate(event) {
+            event.preventDefault();
+
+            const gender = document.querySelector('input[name="gender"]:checked').value;
+            const age = parseFloat(document.getElementById('age').value);
+            const weight = parseFloat(document.getElementById('weight').value);
+            const height = parseFloat(document.getElementById('height').value);
+            const bodyFat = parseFloat(document.getElementById('bodyfat').value);
+            const activityLevel = parseFloat(document.getElementById('activity').value);
+            const goal = document.getElementById('goal').value;
+            const macroRatio = document.getElementById('macroRatio').value;
+
+            if (isNaN(age) || isNaN(weight) || isNaN(height) || age <= 0 || weight <= 0 || height <= 0) {
+                alert("กรุณากรอกข้อมูล อายุ, น้ำหนัก, และส่วนสูงให้ถูกต้อง");
+                return;
+            }
+
+            let bmr = 0;
+            let formulaUsed = '';
+            if (!isNaN(bodyFat) && bodyFat > 0) {
+                const leanBodyMass = weight * (1 - (bodyFat / 100));
+                bmr = 370 + (21.6 * leanBodyMass);
+                formulaUsed = '(Katch-McArdle)';
+            } else {
+                bmr = (10 * weight) + (6.25 * height) - (5 * age) + (gender === 'male' ? 5 : -161);
+                formulaUsed = '(Mifflin-St Jeor)';
+            }
+            
+            const tdee = bmr * activityLevel;
+            let goalCalories = tdee;
+            if (goal === 'lose') {
+                goalCalories -= 500;
+            } else if (goal === 'gain') {
+                goalCalories += 500;
+            }
+
+            let carbPercent, proteinPercent, fatPercent;
+            switch (macroRatio) {
+                case 'highprotein': carbPercent = 0.30; proteinPercent = 0.40; fatPercent = 0.30; break;
+                case 'lowcarb': carbPercent = 0.20; proteinPercent = 0.45; fatPercent = 0.35; break;
+                default: carbPercent = 0.40; proteinPercent = 0.30; fatPercent = 0.30; break;
+            }
+
+            const protein = (goalCalories * proteinPercent) / 4;
+            const carbs = (goalCalories * carbPercent) / 4;
+            const fat = (goalCalories * fatPercent) / 9;
+
+            displayResults(bmr, tdee, goalCalories, protein, carbs, fat, formulaUsed, goal, macroRatio);
+        }
+
+        function displayResults(bmr, tdee, goalCalories, protein, carbs, fat, formulaUsed, goal, macroRatio) {
+            const selectedGoalText = document.querySelector(`#goal option[value='${goal}']`).textContent.split(' (')[0];
+            const selectedMacroText = document.querySelector(`#macroRatio option[value='${macroRatio}']`).textContent;
+            
+            const foodSuggestionsHTML = generateInteractiveFoodSectionHTML();
+
+            resultsDiv.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-center">
+                    <div class="result-card bg-slate-100 dark:bg-gray-700 p-6 rounded-lg"><h3 class="text-lg font-semibold text-gray-600 dark:text-gray-300">BMR <span class="text-xs">${formulaUsed}</span></h3><p class="text-3xl font-bold text-indigo-600 dark:text-indigo-400 my-2">${bmr.toFixed(0)}</p><p class="text-sm text-gray-500 dark:text-gray-400">แคลอรี่/วัน</p></div>
+                    <div class="result-card bg-slate-100 dark:bg-gray-700 p-6 rounded-lg"><h3 class="text-lg font-semibold text-gray-600 dark:text-gray-300">TDEE</h3><p class="text-3xl font-bold text-pink-500 dark:text-pink-400 my-2">${tdee.toFixed(0)}</p><p class="text-sm text-gray-500 dark:text-gray-400">แคลอรี่/วัน</p></div>
+                </div>
+                <div class="result-card mt-6 bg-green-50 dark:bg-green-900/50 p-6 rounded-lg text-center border border-green-200 dark:border-green-700"><h3 class="text-lg font-semibold text-green-800 dark:text-green-200">แคลอรี่ตามเป้าหมาย (${selectedGoalText})</h3><p class="text-4xl font-bold text-green-600 dark:text-green-400 my-2">${goalCalories.toFixed(0)}</p><p class="text-sm text-gray-500 dark:text-gray-400">แคลอรี่/วัน</p></div>
+                <div class="result-card mt-6 bg-sky-50 dark:bg-sky-900/50 p-6 rounded-lg border border-sky-200 dark:border-sky-700">
+                    <h3 class="text-lg font-semibold text-center text-sky-800 dark:text-sky-200 mb-4">สารอาหาร (${selectedMacroText})</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                        <div class="relative h-48 md:h-56"><canvas id="macroChart"></canvas></div>
+                        <div class="space-y-4 text-center md:text-left">
+                            <div><h4 class="font-bold text-cyan-500">โปรตีน</h4><p class="text-2xl font-medium text-gray-800 dark:text-white">${protein.toFixed(0)} กรัม</p></div>
+                            <div><h4 class="font-bold text-amber-500">คาร์โบไฮเดรต</h4><p class="text-2xl font-medium text-gray-800 dark:text-white">${carbs.toFixed(0)} กรัม</p></div>
+                            <div><h4 class="font-bold text-rose-500">ไขมัน</h4><p class="text-2xl font-medium text-gray-800 dark:text-white">${fat.toFixed(0)} กรัม</p></div>
+                        </div>
+                    </div>
+                </div>
+                ${foodSuggestionsHTML}
+            `;
+            
+            resultsDiv.style.display = 'block';
+            createMacroChart(protein, carbs, fat);
+            attachFoodSelectorListeners({ protein: protein, carbs: carbs, fats: fat });
+            resultsDiv.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function generateInteractiveFoodSectionHTML() {
+            const createSelector = (macroType, label) => {
+                let options = foodDatabase[macroType].map((food, index) => `<option value="${index}">${food.name}</option>`).join('');
+                return `
+                <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
+                    <div class="flex-shrink-0 sm:w-20 text-left sm:text-center"><p class="font-bold text-gray-700 dark:text-gray-200">${label}</p></div>
+                    <select id="${macroType}-selector" class="food-selector form-input w-full sm:w-auto flex-grow rounded-md border-gray-300 shadow-sm dark:bg-gray-700 dark:border-gray-600 dark:text-white">
+                        ${options}
+                    </select>
+                    <div class="flex-shrink-0 text-left sm:text-right font-semibold text-indigo-600 dark:text-indigo-400 text-lg">
+                        <span id="${macroType}-amount">0</span>
+                    </div>
+                </div>`;
+            };
+
+            return `
+            <div class="result-card mt-6 bg-amber-50 dark:bg-amber-900/50 p-6 rounded-lg border border-amber-200 dark:border-amber-700">
+                <h3 class="text-lg font-semibold text-center text-amber-800 dark:text-amber-200 mb-4">เลือกดูตัวอย่างอาหาร</h3>
+                <div class="space-y-4">
+                    ${createSelector('protein', 'โปรตีน')}
+                    ${createSelector('carbs', 'คาร์โบไฮเดรต')}
+                    ${createSelector('fats', 'ไขมัน')}
+                </div>
+                <p class="text-xs text-center text-gray-400 mt-4">*ปริมาณอาหารเป็นค่าประมาณจากน้ำหนักดิบ (ยกเว้นที่ระบุ) และอาจแตกต่างกันไปตามชนิดและวิธีปรุง</p>
+            </div>`;
+        }
+        
+        function attachFoodSelectorListeners(macros) {
+            const calculateAndUpdate = (macroType) => {
+                const selector = document.getElementById(`${macroType}-selector`);
+                const amountSpan = document.getElementById(`${macroType}-amount`);
+                
+                const selectedIndex = selector.value;
+                const food = foodDatabase[macroType][selectedIndex];
+                const totalMacro = macros[macroType];
+                
+                let amount = 0;
+                if (food.value > 0) {
+                    amount = food.unit === 'ฟอง' ? (totalMacro / food.value) : (totalMacro / food.value) * 100;
+                }
+                
+                amountSpan.textContent = `${amount.toFixed(0)} ${food.unit}`;
+            };
+
+            ['protein', 'carbs', 'fats'].forEach(macroType => {
+                const selector = document.getElementById(`${macroType}-selector`);
+                if(selector) {
+                    selector.addEventListener('change', () => calculateAndUpdate(macroType));
+                    // Initial calculation
+                    calculateAndUpdate(macroType);
+                }
+            });
+        }
+
+        function createMacroChart(protein, carbs, fat) {
+            if (myMacroChart) myMacroChart.destroy();
+            const ctx = document.getElementById('macroChart').getContext('2d');
+            myMacroChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['โปรตีน', 'คาร์โบไฮเดรต', 'ไขมัน'],
+                    datasets: [{
+                        label: 'สัดส่วนสารอาหาร (กรัม)',
+                        data: [protein, carbs, fat],
+                        backgroundColor: ['rgb(6, 182, 212)', 'rgb(245, 158, 11)', 'rgb(244, 63, 94)'],
+                        borderColor: 'rgba(255, 255, 255, 0.1)',
+                        borderWidth: 2,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '60%',
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: (c) => `${c.label}: ${c.parsed.toFixed(0)} กรัม` } } }
+                }
+            });
+        }
+
+        function handleReset() {
+            bmrForm.reset();
+            resultsDiv.style.display = 'none';
+            resultsDiv.innerHTML = '';
+            if (myMacroChart) {
+                myMacroChart.destroy();
+                myMacroChart = null;
+            }
+        }
+
+        // --- PWA Service Worker Registration ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js').then(registration => {
+                    console.log('SW registered: ', registration);
+                }).catch(registrationError => {
+                    console.log('SW registration failed: ', registrationError);
+                });
+            });
+        }
+    </script>
+</body>
+</html>
