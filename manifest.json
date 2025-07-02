@@ -11,6 +11,20 @@
   "launch_handler": {
     "client_mode": "navigate-existing"
   },
+  "screenshots": [
+    {
+      "src": "https://placehold.co/540x720/f1f5f9/333333?text=App+Screenshot+1",
+      "type": "image/png",
+      "sizes": "540x720",
+      "form_factor": "narrow"
+    },
+    {
+      "src": "https://placehold.co/540x720/ffffff/333333?text=App+Screenshot+2",
+      "type": "image/png",
+      "sizes": "540x720",
+      "form_factor": "narrow"
+    }
+  ],
   "icons": [
     {
       "src": "https://placehold.co/192x192/4f46e5/ffffff?text=❤️",
