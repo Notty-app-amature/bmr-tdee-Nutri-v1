@@ -4,6 +4,13 @@
   "short_name": "สุขภาพดี",
   "description": "คำนวณ BMR, TDEE, แคลอรี่, Macros และวางแผนโภชนาการ",
   "scope": "/health-calculator-app/",
+  "scope_extensions": [
+    { "origin": "https://cdn.tailwindcss.com" },
+    { "origin": "https://cdn.jsdelivr.net" },
+    { "origin": "https://fonts.googleapis.com" },
+    { "origin": "https://fonts.gstatic.com" },
+    { "origin": "https://placehold.co" }
+  ],
   "categories": [
     "health",
     "fitness",
